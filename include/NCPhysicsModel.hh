@@ -25,8 +25,8 @@ namespace NCPluginNamespace {
     static bool isApplicable( const NC::Info& );
     static PhysicsModel createFromInfo( const NC::Info& );//will raise BadInput in case of syntax errors
 
-    //Constructor gets the constants of the piecewise power fit:
-    PhysicsModel( double A1, double b1, double A2, double b2, double Q0, double sigma0 );
+    //Constructor gets the constants of the piecewise fit:
+    PhysicsModel( double A, double s, double rg, double m, double p, double q1, double sigma0 );
 
     //Provide cross sections for a given neutron:
     double calcCrossSection( double neutron_ekin ) const;
@@ -40,11 +40,12 @@ namespace NCPluginNamespace {
 
   private:
     //Data members:
-    double m_A1;
-    double m_b1;
-    double m_A2;
-    double m_b2;
-    double m_Q0;
+    double m_A;
+    double m_s;
+    double m_rg;
+    double m_m;
+    double m_p;
+    double m_q1;
     double m_sigma0;
   };
 

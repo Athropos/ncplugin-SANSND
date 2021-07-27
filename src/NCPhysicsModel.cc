@@ -4,6 +4,8 @@
 #include "NCrystal/internal/NCString.hh"
 #include "NCrystal/internal/NCRandUtils.hh"
 
+#include <boost/math/special_functions/gamma.hpp>
+#include <math.h>
 #include <iostream>
 
 bool NCP::PhysicsModel::isApplicable( const NC::Info& info )
@@ -27,27 +29,28 @@ NCP::PhysicsModel NCP::PhysicsModel::createFromInfo( const NC::Info& info )
   // is usual in NCrystal):
   //
   // @CUSTOM_SANSND
-  //    v                # plugin version
-  //    A_1 b_1 A_2 b_2  # piecewise power law parameters
-  //    Q_0 sigma_0      # boundary parameter and absolute cross section 
+  //    v                   # plugin version
+  //    A s rg m p          # piecewise GP and power law parameters
+  //    q1 sigma_0          # boundary parameter and absolute cross section 
   //              
 
-  //Verify we have exactly three lines and 1-4-2 numbers:
-  if ( data.size() != 3 || data.at(0).size()!=1 || data.at(1).size()!=4 || data.at(2).size()!=2 )
+  //Verify we have exactly three lines and 1-5-2 numbers:
+  if ( data.size() != 3 || data.at(0).size()!=1 || data.at(1).size()!=5 || data.at(2).size()!=2 )
     NCRYSTAL_THROW2(BadInput,"Data in the @CUSTOM_"<<pluginNameUpperCase()
-                    <<" section should be three lines with 1-4-2 numbers");
+                    <<" section should be three lines with 1-5-2 numbers");
 
   //Parse and validate values:
-  double supp_version = 1.0;
-  double version, A1, A2, b1, b2, Q0, sigma0 ;
+  double supp_version = 2.0;
+  double version, A, s, rg, m, p, q1, sigma0 ;
   if ( ! NC::safe_str2dbl( data.at(0).at(0), version )
-       || ! NC::safe_str2dbl( data.at(1).at(0), A1 )
-       || ! NC::safe_str2dbl( data.at(1).at(1), b1 )
-       || ! NC::safe_str2dbl( data.at(1).at(2), A2 )
-       || ! NC::safe_str2dbl( data.at(1).at(3), b2 )
-       || ! NC::safe_str2dbl( data.at(2).at(0), Q0 )
+       || ! NC::safe_str2dbl( data.at(1).at(0), A )
+       || ! NC::safe_str2dbl( data.at(1).at(1), s )
+       || ! NC::safe_str2dbl( data.at(1).at(2), rg )
+       || ! NC::safe_str2dbl( data.at(1).at(3), m )
+       || ! NC::safe_str2dbl( data.at(1).at(4), p )
+       || ! NC::safe_str2dbl( data.at(2).at(0), q1 )
        || ! NC::safe_str2dbl( data.at(2).at(1), sigma0 )
-       || !(Q0>0) || !(sigma0>0)) 
+       || !(p>-2) || !(m>-2) || !(q1>0) || !(sigma0>0)) //condition for a safe integral
     NCRYSTAL_THROW2( BadInput,"Invalid values specified in the @CUSTOM_"<<pluginNameUpperCase()
                      <<" section (see the plugin readme for more info)" );
   //special warning for wrong version
@@ -56,15 +59,16 @@ NCP::PhysicsModel NCP::PhysicsModel::createFromInfo( const NC::Info& info )
                      <<" plugin. Only the version "<<supp_version<<" is supported." );
 
   //Parsing done! Create and return our model:
-  return PhysicsModel(A1, b1, A2, b2, Q0,sigma0);
+  return PhysicsModel(A, s, rg, m, p, q1, sigma0);
 }
 
-NCP::PhysicsModel::PhysicsModel( double A1, double b1, double A2, double b2, double Q0, double sigma0 )
-  : m_A1(A1),
-    m_b1(b1),
-    m_A2(A2),
-    m_b2(b2),
-    m_Q0(Q0),
+NCP::PhysicsModel::PhysicsModel( double A, double s,double rg,double m,double p,double q1,double sigma0 )
+  : m_A(A),
+    m_s(s),
+    m_rg(rg),
+    m_m(m),
+    m_p(p),
+    m_q1(q1),
     m_sigma0(sigma0)
 {
   //Important note to developers who are using the infrastructure in the
@@ -74,14 +78,28 @@ NCP::PhysicsModel::PhysicsModel( double A1, double b1, double A2, double b2, dou
   //__init__.py, and NCForPython.cc - that way you can still instantiate your
   //model directly from your python test code).
 
-  nc_assert( m_Q0 > 0.0 );
+  nc_assert( m_m > -2 );
+  nc_assert( m_p > -2 );
+  nc_assert( m_q1 > 0.0 );
   nc_assert( m_sigma0 > 0.0 );
 }
 
 double NCP::PhysicsModel::calcCrossSection( double neutron_ekin ) const
 {
+
+  q2 = 1.0/m_rg*sqrt((m_m-m_s)*(3-m_s)/2);
+  B = std::pow(q2,m_m-m_s)*exp((-q2**2*m_rg**2)/(3-m_s));
+  C = std::pow(q1,m_p-m_s)*exp((-q1**2*m_rg**2)/(3-m_s));
+  
   double k =  NC::k2Pi/ NC::ekin2wl(neutron_ekin); //wavevector
-  double total_sigma = (m_sigma0/(2*k*k))*(m_A1/(m_b1+2)*std::pow(m_Q0,m_b1+2) + m_A2/(m_b2+2)*std::pow(2*k,m_b2+2) - m_A2/(m_b2+2)*std::pow(m_Q0,m_b2+2));
+  //definite power law integral from 0 to q1
+  double defint_power_law = C*std:pow(m_q1,m_p+2)/(m_p+2);
+  //definite guinier integral from q1 to q2
+  double r = m_rg*m_rg/(3-s);
+  double defint_guinier_q2 = -(std::pow(q2,-m_s)*std:pow(r*q2*q2,m_s/2)*boost::math::tgamma(1-m_s/2,r*q2*q2))/(2*r);
+  double defint_guinier_q1 = -(std::pow(m_q1,-m_s)*std:pow(r*m_q1*m_q1,m_s/2)*boost::math::tgamma(1-m_s/2,r*m_q1*m_q1))/(2*r);
+  double defint_guinier = defint_guinier_q2 - defint_guinier_q1;
+  double total_sigma = (m_sigma0/(2*k*k))*m_A*(defint_power_law+defint_guinier+defint_porod);
   return total_sigma;
 }
 

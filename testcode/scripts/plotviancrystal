@@ -19,13 +19,14 @@ ncplugin.registerPlugin()#<---register our plugin with NCrystal
 # the content is identical apart from the @CUSTOM_... section
 #
 
-A1=132.869
-b1=-1.33605
-A2=0.0519763
-b2=-3.97314
-Q0=0.0510821
+A=66.40901846
+s=1.50279313
+rg=14.64271592
+m=4.14778786
+p=2.13191984
+q1=0.016
 sigma0=5.551
-version = 1.0
+version = 2.0
 
 dummyal="""NCMAT v3
 #Diamond.
@@ -115,10 +116,10 @@ dummyal="""NCMAT v3
 """
 
 
-customsection='@CUSTOM_%s\n  %g\n%g %g %g %g\n %g %g'% ( ncplugin.pluginName().upper(),
+customsection='@CUSTOM_%s\n  %g\n%g %g %g %g %g\n %g %g'% ( ncplugin.pluginName().upper(),
                                         version,
-                                        A1,b1,A2,b2,
-                                        Q0,sigma0 )
+                                        A,s,rg,m,p,
+                                        q1,sigma0 )
 NC.registerInMemoryFileData('stdDiamond.ncmat', dummyal)
 NC.registerInMemoryFileData('customDiamond.ncmat', dummyal+customsection)
 
@@ -149,7 +150,7 @@ plt.plot( ekins, sc_plugin.xsect(wl=NC.ekin2wl(ekins)), label='With SANS' )
 # custom python hooks, without going through the standard NCrystal
 # infrastructure:
 #
-pm = ncplugin.PhysicsModel( A1=A1, b1=b1, A2=A2, b2=b2, Q0=Q0, sigma0=sigma0)
+pm = ncplugin.PhysicsModel( A=A, s=s, rg=rg, m=m, p=p,q1=q1, sigma0=sigma0)
 plt.plot(ekins, pm.calcCrossSection(ekins),
          ls=':',lw=1, color='dimgray',label='Only SANS')
 
@@ -157,9 +158,9 @@ plt.plot(ekins, pm.calcCrossSection(ekins),
 teshi_data = pandas.read_csv("/home/nicorizzi/ncplugin-SANSND/testcode/data/teshi.dat", sep=" ")
 vesuvio_data = pandas.read_csv("/home/nicorizzi/ncplugin-SANSND/testcode/data/vesuvio.dat", sep=" ")
 njoy_data = pandas.read_csv("/home/nicorizzi/ncplugin-SANSND/testcode/data/njoy_calc.txt", sep=" ")
-plt.scatter(teshi_data["E"],teshi_data["xs"], s=15, facecolors='none', edgecolors='r', label='Teshigawara at al. [2019]')
-plt.scatter(vesuvio_data["E"],vesuvio_data["xs"],s=15, facecolors='none', edgecolors='g',label='VESUVIO exp. [2019]')
-plt.scatter(njoy_data["E"],njoy_data["xs"],s=15, facecolors='none', edgecolors='b',label='Granada et al. [2020]')
+#plt.scatter(teshi_data["E"],teshi_data["xs"], s=15, facecolors='none', edgecolors='r', label='Teshigawara at al. [2019]')
+#plt.scatter(vesuvio_data["E"],vesuvio_data["xs"],s=15, facecolors='none', edgecolors='g',label='VESUVIO exp. [2019]')
+#plt.scatter(njoy_data["E"],njoy_data["xs"],s=15, facecolors='none', edgecolors='b',label='Granada et al. [2020]')
 
 plt.xlabel('Energy (eV)')
 plt.ylabel('Total Cross Section (barn)')
@@ -184,5 +185,5 @@ plt.grid(which='both', linestyle=':')
 plt.xscale('log')
 
 
-plt.show()
+plt.show() 
 

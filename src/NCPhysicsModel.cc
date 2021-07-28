@@ -78,8 +78,10 @@ NCP::PhysicsModel::PhysicsModel( double A, double s,double rg,double m,double p,
   //__init__.py, and NCForPython.cc - that way you can still instantiate your
   //model directly from your python test code).
 
-  nc_assert( m_m > -2 );
-  nc_assert( m_p > -2 );
+  nc_assert( m_s < 3 );
+  nc_assert( m_s < m_m );
+  nc_assert( m_m > 2 );
+  nc_assert( m_p > 2 );
   nc_assert( m_q1 > 0.0 );
   nc_assert( m_sigma0 > 0.0 );
 }
@@ -87,19 +89,16 @@ NCP::PhysicsModel::PhysicsModel( double A, double s,double rg,double m,double p,
 double NCP::PhysicsModel::calcCrossSection( double neutron_ekin ) const
 {
 
-  q2 = 1.0/m_rg*sqrt((m_m-m_s)*(3-m_s)/2);
-  B = std::pow(q2,m_m-m_s)*exp((-q2**2*m_rg**2)/(3-m_s));
-  C = std::pow(q1,m_p-m_s)*exp((-q1**2*m_rg**2)/(3-m_s));
+  double q2 = 1.0/m_rg*sqrt((m_m-m_s)*(3-m_s)/2);
+  double B = std::pow(q2,m_m-m_s)*exp((-q2*q2*m_rg*m_rg)/(3-m_s));
+  //double C = std::pow(m_q1,m_p-m_s)*exp((-m_q1*m_q1*m_rg*m_rg)/(3-m_s));
   
   double k =  NC::k2Pi/ NC::ekin2wl(neutron_ekin); //wavevector
-  //definite power law integral from 0 to q1
-  double defint_power_law = C*std:pow(m_q1,m_p+2)/(m_p+2);
-  //definite guinier integral from q1 to q2
-  double r = m_rg*m_rg/(3-s);
-  double defint_guinier_q2 = -(std::pow(q2,-m_s)*std:pow(r*q2*q2,m_s/2)*boost::math::tgamma(1-m_s/2,r*q2*q2))/(2*r);
-  double defint_guinier_q1 = -(std::pow(m_q1,-m_s)*std:pow(r*m_q1*m_q1,m_s/2)*boost::math::tgamma(1-m_s/2,r*m_q1*m_q1))/(2*r);
-  double defint_guinier = defint_guinier_q2 - defint_guinier_q1;
-  double total_sigma = (m_sigma0/(2*k*k))*m_A*(defint_power_law+defint_guinier+defint_porod);
+  //definite power guinier integral from 0 to q1
+  double r = m_rg*m_rg/(3-m_s);
+  double defint_guinier = std::pow(r,m_s/2-1)/2*boost::math::tgamma_lower(1-m_s/2,r*q2*q2);
+  double defint_porod = B*(std::pow(2*k,2-m_m)/(2-m_m) - std::pow(q2,2-m_m)/(2-m_m));
+  double total_sigma = (m_sigma0/(2*k*k))*m_A*(defint_guinier+defint_porod);
   return total_sigma;
 }
 
@@ -110,11 +109,11 @@ double NCP::PhysicsModel::sampleScatteringVector( NC::RNG& rng, double neutron_e
   double k =  NC::k2Pi/NC::ekin2wl(neutron_ekin); //wavevector
   //sample a random scattering vector Q from the inverse CDF (see plugin readme)
   double ratio_sigma = (m_sigma0/(2*k*k))/calcCrossSection(neutron_ekin); //cross section over total cross section ratio
-  double CDF_Q0 = (m_A1*std::pow(m_Q0, m_b1+2)/(m_b1+2))*ratio_sigma;
+  double CDF_Q0 = (m_A*std::pow(m_q1, m_p+2)/(m_p+2))*ratio_sigma;
   if(rand < CDF_Q0){
-    Q = std::pow(((m_b1+2)*rand/m_A1)/ratio_sigma, 1/(m_b1+2));
+    Q = std::pow(((m_p+2)*rand/m_A)/ratio_sigma, 1/(m_p+2));
   } else {
-    Q = std::pow((rand/ratio_sigma - (m_A1/(m_b1+2))*std::pow(m_Q0,m_b1+2) + (m_A2/(m_b2+2))*std::pow(m_Q0,m_b2+2))*(m_b2+2)/m_A2, 1/(m_b2+2));
+    Q = std::pow((rand/ratio_sigma - (m_A/(m_p+2))*std::pow(m_q1,m_p+2) + (m_A/(m_p+2))*std::pow(m_q1,m_p+2))*(m_p+2)/m_A, 1/(m_p+2));
   }
 
   return Q;

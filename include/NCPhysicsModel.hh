@@ -4,6 +4,7 @@
 #include "NCrystal/NCPluginBoilerplate.hh"//Common stuff (includes NCrystal
                                           //public API headers, sets up
                                           //namespaces and aliases)
+#include <functional>
 
 namespace NCPluginNamespace {
 
@@ -24,10 +25,12 @@ namespace NCPluginNamespace {
 
     static bool isApplicable( const NC::Info& );
     static PhysicsModel createFromInfo( const NC::Info& );//will raise BadInput in case of syntax errors
-
+    //Constructor gets the filename of the input data file:
+    PhysicsModel(std::string filename );
     //Constructor gets the constants of the piecewise fit:
     PhysicsModel( double A, double s, double rg, double m, double p, double q1, double sigma0 );
-
+     //Provide the integral of q*I(q) in the range 0 to 2k_i :
+    double calcIntinKinematicRange( double neutron_ekin ) const;
     //Provide cross sections for a given neutron:
     double calcCrossSection( double neutron_ekin ) const;
     //Sample scattering vector from inverse CDF (rng is random number stream).
@@ -40,6 +43,7 @@ namespace NCPluginNamespace {
 
   private:
     //Data members:
+    std::string m_filename;
     double m_A;
     double m_s;
     double m_rg;
@@ -47,6 +51,14 @@ namespace NCPluginNamespace {
     double m_p;
     double m_q1;
     double m_sigma0;
+    double m_B;
+    double m_q2;
+    double m_r;
+    double m_def_int_guinier;
+    std::vector<double> m_q;
+    std::vector<double> m_I_q;
+    std::vector<double> extr_porod_par;
+    std::function<double( double )> m_f_integral;
   };
 
 }

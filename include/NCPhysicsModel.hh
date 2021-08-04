@@ -28,7 +28,7 @@ namespace NCPluginNamespace {
     //Constructor gets the filename of the input data file:
     PhysicsModel(std::string filename );
     //Constructor gets the constants of the piecewise fit:
-    PhysicsModel( double A, double s, double rg, double m, double p, double q1, double sigma0 );
+    PhysicsModel( double A, double s, double rg, double m, double p, double sigma0 );
      //Provide the integral of q*I(q) in the range 0 to 2k_i :
     double calcIntinKinematicRange( double neutron_ekin ) const;
     //Provide cross sections for a given neutron:
@@ -49,14 +49,16 @@ namespace NCPluginNamespace {
     double m_rg;
     double m_m;
     double m_p;
-    double m_q1;
     double m_sigma0;
     double m_B;
     double m_q2;
     double m_r;
     double m_def_int_guinier;
+    mutable double m_xs_max_k ;
+    double m_xs_max;
     std::vector<double> m_q;
     std::vector<double> m_I_q;
+    std::vector<double> m_CDF;
     std::vector<double> extr_porod_par;
     std::function<double( double )> m_f_integral;
   };

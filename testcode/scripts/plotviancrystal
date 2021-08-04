@@ -116,10 +116,10 @@ dummyal="""NCMAT v3
 """
 
 
-customsection='@CUSTOM_%s\n  %g\n%g %g %g %g %g\n %g %g'% ( ncplugin.pluginName().upper(),
+customsection='@CUSTOM_%s\n  %g\n%g %g %g %g %g\n %g'% ( ncplugin.pluginName().upper(),
                                         version,
                                         A,s,rg,m,p,
-                                        q1,sigma0 )
+                                        sigma0 )
 NC.registerInMemoryFileData('stdDiamond.ncmat', dummyal)
 NC.registerInMemoryFileData('customDiamond.ncmat', dummyal+customsection)
 

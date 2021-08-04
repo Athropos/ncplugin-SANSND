@@ -5,7 +5,8 @@ import NCrystal as NC
 import numpy as np
 import matplotlib.pyplot as plt
 
-physmodel = ncplugin.PhysicsModel(A=66.40901846,  s=1.50279313, rg=14.64271592,  m=4.14778786, p=2.13191984, q1=0.016, sigma0=5.551)
+physmodel = ncplugin.PhysicsModel(A=66.40901846,  s=1.50279313, rg=14.64271592,  m=4.14778786, p=2.13191984, sigma0=5.551)
+#physmodel = ncplugin.PhysicsModel(b'teshi_xs')
 
 nsample = int(1e6)#Warning consumes nsample*8 bytes of memory, so don't be silly
                   #and put to 1e10 (if such large numbers are needed, rewrite
@@ -13,6 +14,7 @@ nsample = int(1e6)#Warning consumes nsample*8 bytes of memory, so don't be silly
 
 nbins = 180
 for wl in np.arange(22,0.5,-7):
+    print(f'cross section @  {wl} AA : {physmodel.calcCrossSection( NC.wl2ekin(wl))} barn')
     muvals = physmodel.sampleScatMu( NC.wl2ekin(wl), nvalues=nsample )
     print(f"Average mu in {float(len(muvals)):g}: {muvals.sum()/len(muvals)} with neutron wavelength: {wl}")
     plt.hist(muvals, bins=nbins,alpha=0.5, label=f'wavelength {wl} Å')

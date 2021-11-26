@@ -137,15 +137,15 @@ dummyal="""NCMAT v5
     .265855 .300494 .41769 .385856 .222808 .130473 .0823366 .0292034 .0125285 0
 """
 
-customsection='@CUSTOM_%s\n  %g\n %d\n %g %g %g %g %g'% ( "SANSND", 
+customsection='@CUSTOM_%s\n  %g\n %d\n %g %g %g %g %g %g'% ( "SANSND", 
                                         version,
                                         1,
-                                        A1,b1,A2,b2,Q0 )
+                                        A1,b1,A2,b2,Q0,R )
 
-customsection2='@CUSTOM_%s\n  %g\n %d\n %g %g %g %g %g'% ( "SANSND", 
+customsection2='@CUSTOM_%s\n  %g\n %d\n %g %g %g %g %g %g'% ( "SANSND", 
                                         version,
                                         2,
-                                        A,s,rg,m,p)
+                                        A,s,rg,m,p,R)
 
 customsection3='@CUSTOM_%s\n  %g\n %d\n %s'% ( "SANSND", 
                                        version,
@@ -193,7 +193,7 @@ sc_plugin5 = NC.createScatter("customDiamond5.ncmat")
 # Plot with matplotlib:
 #
 #wls = np.linspace(0.01,10.0,1000)
-fig, ax = plt.subplots(1,1, figsize=(7, 5), dpi=300)
+fig, ax = plt.subplots(1,1, figsize=(7, 5), dpi=200)
 
 #plt.rcParams["font.family"] = "cursive"
 energies = np.logspace(-5,0,100000)

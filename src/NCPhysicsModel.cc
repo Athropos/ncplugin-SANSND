@@ -50,7 +50,7 @@ NCP::PhysicsModel NCP::PhysicsModel::createFromInfo(const NC::Info &info)
     HSFBA
   };
   int model;
-  double p0, p1, p2, p3, p4;
+  double p0, p1, p2, p3, p4, p5;
   if (!NC::safe_str2dbl(data.at(0).at(0), version))
     NCRYSTAL_THROW2(BadInput, "Invalid version input in the @CUSTOM_" << pluginNameUpperCase()
                                                                       << " section (see the plugin readme for more info).");
@@ -97,8 +97,7 @@ NCP::PhysicsModel NCP::PhysicsModel::createFromInfo(const NC::Info &info)
   }
   case PPF:
   {
-    if (!NC::safe_str2dbl(data.at(2).at(0), p0) || !NC::safe_str2dbl(data.at(2).at(1), p1) || !NC::safe_str2dbl(data.at(2).at(2), p2) || !NC::safe_str2dbl(data.at(2).at(3), p3) || !NC::safe_str2dbl(data.at(2).at(4), p4)
-        //|| ! NC::safe_str2dbl( data.at(2).at(5), sigma0 )
+    if (!NC::safe_str2dbl(data.at(2).at(0), p0) || !NC::safe_str2dbl(data.at(2).at(1), p1) || !NC::safe_str2dbl(data.at(2).at(2), p2) || !NC::safe_str2dbl(data.at(2).at(3), p3) || !NC::safe_str2dbl(data.at(2).at(4), p4) || ! NC::safe_str2dbl( data.at(2).at(5), p5 )
     )
     {
       NCRYSTAL_THROW2(BadInput, "Invalid values specified for model " << model << " in the @CUSTOM_" << pluginNameUpperCase()
@@ -112,16 +111,17 @@ NCP::PhysicsModel NCP::PhysicsModel::createFromInfo(const NC::Info &info)
       nc_assert(p2 > 0);
       nc_assert(p3 > 0);
       nc_assert(p4 > 0);
+      nc_assert(p5 > 0);
 
       // param.insert(param.end(), {A1,b1,A2,b2,Q0,sigma0});
       // Parsing done! Create and return our model:
-      return PhysicsModel(model, p0, p1, p2, p3, p4);
+      return PhysicsModel(model, p0, p1, p2, p3, p4, p5);
     }
     break;
   }
   case GPF:
   {
-    if (!NC::safe_str2dbl(data.at(2).at(0), p0) || !NC::safe_str2dbl(data.at(2).at(1), p1) || !NC::safe_str2dbl(data.at(2).at(2), p2) || !NC::safe_str2dbl(data.at(2).at(3), p3) || !NC::safe_str2dbl(data.at(2).at(4), p4))
+    if (!NC::safe_str2dbl(data.at(2).at(0), p0) || !NC::safe_str2dbl(data.at(2).at(1), p1) || !NC::safe_str2dbl(data.at(2).at(2), p2) || !NC::safe_str2dbl(data.at(2).at(3), p3) || !NC::safe_str2dbl(data.at(2).at(4), p4)  || !NC::safe_str2dbl(data.at(2).at(5), p5))
     {
       NCRYSTAL_THROW2(BadInput, "Invalid values specified for model " << model << " in the @CUSTOM_" << pluginNameUpperCase()
                                                                       << " section (see the plugin readme for more info)");
@@ -134,9 +134,10 @@ NCP::PhysicsModel NCP::PhysicsModel::createFromInfo(const NC::Info &info)
       nc_assert(p2 > 0);
       nc_assert(p3 > 0);
       nc_assert(p4 > 0);
+      nc_assert(p5 > 0);
       // param.insert(param.end(), {A,s,rg,m});
       // Parsing done! Create and return our model:
-      return PhysicsModel(model, p0, p1, p2, p3, p4);
+      return PhysicsModel(model, p0, p1, p2, p3, p4, p5);
     }
     break;
   }
@@ -206,9 +207,9 @@ NCP::PhysicsModel::PhysicsModel(std::string filename, double norm)
         //std::cout<<"helper initialized: " << m_helper.has_value() <<std::endl;
       };
 
-NCP::PhysicsModel::PhysicsModel(int model, double p0, double p1, double p2, double p3, double p4)
+NCP::PhysicsModel::PhysicsModel(int model, double p0, double p1, double p2, double p3, double p4,double p5)
     : m_model(model),
-      m_param({p0, p1, p2, p3, p4}),
+      m_param({p0, p1, p2, p3, p4,p5}),
       m_helper(([model, p0, p1, p2, p3, p4]() -> NC::IofQHelper
                 { 
       
@@ -280,7 +281,7 @@ NCP::PhysicsModel::PhysicsModel(int model, double p0, double p1, double p2, doub
       //Initialize the helper        
       NC::IofQHelper helper(q,IofQ);
       return helper; })()){
-        //::cout<<"call to constructor for 1 and 2"<<std::endl;
+        //std::cout<<p5<<std::endl;
         //std::cout<<"helper initialized: " << m_helper.has_value() <<std::endl;
       };
 
@@ -402,8 +403,22 @@ double NCP::PhysicsModel::calcCrossSection(double neutron_ekin) const
   };
   switch (m_model)
   {
-  case PPF:
+  case FILE:
   {
+    if (m_helper.has_value() && m_norm.has_value())
+    {
+      nc_assert(k!=0);
+      SANS_xs = 2*NC::kPi / ( k * k) * m_helper.value().calcQIofQIntegral(ekin);
+    }
+    else
+    {
+      NCRYSTAL_THROW2(LogicError, "Attempt to use not-initialized IofQHelper in xs sampling in the " << pluginNameUpperCase()
+                                                                                                     << " plugin");
+    }
+    break;
+  }
+  case PPF:
+  /*{
     if (m_param.has_value()){
       double A1=m_param.value().at(0);
       double b1=m_param.value().at(1);
@@ -417,13 +432,12 @@ double NCP::PhysicsModel::calcCrossSection(double neutron_ekin) const
                                                                                                      << " plugin");
     }
     break;
-  }
-  case FILE:
-    {
-    if (m_helper.has_value() && m_norm.has_value())
-    {
-      nc_assert(k!=0);
-      SANS_xs = 2*NC::kPi / ( k * k) * m_helper.value().calcQIofQIntegral(ekin);
+  }*/
+  case GPF:
+  {
+    if (m_param.has_value()){
+      double R=m_param.value().at(5);
+    SANS_xs = 0.006872*std::pow(R,4.015)/neutron_ekin;
     }
     else
     {
@@ -432,8 +446,7 @@ double NCP::PhysicsModel::calcCrossSection(double neutron_ekin) const
     }
     break;
   }
-  case GPF:
-  {
+  /*{
     if (m_helper.has_value())
     {
       nc_assert(k!=0);
@@ -445,7 +458,7 @@ double NCP::PhysicsModel::calcCrossSection(double neutron_ekin) const
                                                                                                      << " plugin");
     }
     break;
-  }
+  }*/
   case HSFBA:
   {
     // b = 6.646E-05;//[AA] <- Carbon coherent scattering length
@@ -527,10 +540,10 @@ double NCP::PhysicsModel::sampleScatteringVector(NC::RNG &rng, double neutron_ek
     double b2 = 3.97314;
     double Q0 = 0.0510821;
     double corr_param = 5.4;
-    double xs = calcCrossSection(neutron_ekin);
+    double xs = (A1/(-b1+2)*std::pow(Q0,-b1+2) + A2/(-b2+2)*std::pow(2*k,-b2+2) - A2/(-b2+2)*std::pow(Q0,-b2+2));
     nc_assert(k!=0);
     nc_assert(xs!=0);
-    double ratio_sigma = (  2*NC::kPi / ( k * k) ) / xs ; // cross section over total cross section ratio
+    double ratio_sigma = 1 / xs ; // cross section over total cross section ratio
     double CDF_Q0 = (A1 * std::pow(Q0, -b1 + 2) / (-b1 + 2)) * ratio_sigma;
     if (rand < CDF_Q0)
     {

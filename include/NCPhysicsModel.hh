@@ -30,7 +30,7 @@ namespace NCPluginNamespace {
     //Constructor gets the filename of the input data file:
     PhysicsModel(std::string filename, double norm = 1 );
     //Constructor gets the models string and the param:
-    PhysicsModel( int model, double p0, double p1, double p2, double p3, double p4 );
+    PhysicsModel( int model, double p0, double p1, double p2, double p3, double p4,double p5 );
     //Constructor gets the models string and nanoparticle radius R :
     PhysicsModel( int model, double mono_R);
     //Constructor gets the models string and the dist R file:

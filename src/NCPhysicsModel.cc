@@ -214,7 +214,7 @@ NCP::PhysicsModel::PhysicsModel(int model, double p0, double p1, double p2, doub
                 { 
       
       //Generate vector of data q and IofQ
-      double q_min = std::log10(0.007);
+      double q_min = std::log10(0.06);
       int sampling =  std::abs(1-q_min)*10000;
       NC::VectD q = NC::logspace(q_min,1,sampling);
       NC::VectD IofQ = q;
@@ -226,33 +226,34 @@ NCP::PhysicsModel::PhysicsModel(int model, double p0, double p1, double p2, doub
         double m=p3;
         double p=p4;
         //Q1 is when IofQ stops being evaluated as power law and Guinier starts (maybe parameter?)
-        double Q1=0.016;
-        auto it_q1 = std::lower_bound(IofQ.begin(),IofQ.end(), Q1);
+        //double Q1=0.016;
+        //auto it_q1 = std::lower_bound(IofQ.begin(),IofQ.end(), Q1);
         //Approximation valid as long as we have high sampling. Otherwise interpolation needed
-        if (it_q1==IofQ.end()) 
-          NCRYSTAL_THROW2( BadInput,"Invalid parameters, Q1 bigger then 10 AA-1 in the @CUSTOM_"<<pluginNameUpperCase()
-                            <<" section (see the plugin readme for more info)" );
-        if (it_q1==IofQ.begin()) 
-          NCRYSTAL_THROW2( BadInput,"Invalid parameters, Q1 smaller then 1e-5 AA-1 in the @CUSTOM_"<<pluginNameUpperCase()
-                            <<" section (see the plugin readme for more info)" );
-        nc_assert(s!=3);
-        double C = A*std::pow(Q1,p-s)*std::exp((-Q1*Q1*rg*rg)/(3-s));
-        std::for_each(IofQ.begin(),it_q1,
-                      [C,p](double &x) { x = C*std::pow(x,-p);}
-                      ); 
+        //if (it_q1==IofQ.end()) 
+         // NCRYSTAL_THROW2( BadInput,"Invalid parameters, Q1 bigger then 10 AA-1 in the @CUSTOM_"<<pluginNameUpperCase()
+        //                    <<" section (see the plugin readme for more info)" );
+        //if (it_q1==IofQ.begin()) 
+        //  NCRYSTAL_THROW2( BadInput,"Invalid parameters, Q1 smaller then 1e-5 AA-1 in the @CUSTOM_"<<pluginNameUpperCase()
+        //                    <<" section (see the plugin readme for more info)" );
+        //nc_assert(s!=3);
+        //double C = A*std::pow(Q1,p-s)*std::exp((-Q1*Q1*rg*rg)/(3-s));
+        //std::for_each(IofQ.begin(),it_q1,
+        //              [C,p](double &x) { x = C*std::pow(x,-p);}
+        //              ); 
         //evaluate Q2 where IofQ stops being evaluated as Guinier and Porod starts
         double Q2 = 1.0/rg*std::sqrt((m-s)*(3-s)/2);
         //IofQ still filled with q here
-        auto it_q2 = std::lower_bound(it_q1,IofQ.end(), Q2);
+        //auto it_q2 = std::lower_bound(it_q1,IofQ.end(), Q2);
+        auto it_q2 = std::lower_bound(IofQ.begin(),IofQ.end(), Q2);
         //Approximation valid as long as we have high sampling. Otherwise interpolation needed
         if (it_q2==IofQ.end()) 
           NCRYSTAL_THROW2( BadInput,"Invalid parameters, Q2 bigger then 10 AA-1 in the @CUSTOM_"<<pluginNameUpperCase()
                             <<" section (see the plugin readme for more info)" );
-        if (it_q2==it_q1) 
-          NCRYSTAL_THROW2( BadInput,"Invalid parameters, Q1==Q2 in the @CUSTOM_"<<pluginNameUpperCase()
-                            <<" section (see the plugin readme for more info)" );
+        //if (it_q2==it_q1) 
+        //  NCRYSTAL_THROW2( BadInput,"Invalid parameters, Q1==Q2 in the @CUSTOM_"<<pluginNameUpperCase()
+        //                    <<" section (see the plugin readme for more info)" );
         double B = A*std::pow(Q2,m-s)*std::exp((-Q2*Q2*rg*rg)/(3-s));
-        std::for_each(it_q1,it_q2,
+        std::for_each(IofQ.begin(),it_q2,
                       [A,s,rg](double &x) { x = A*std::pow(x,-s)*std::exp((-x*x*rg*rg)/(3-s));}
                       ); 
         std::for_each(it_q2,IofQ.end(),
@@ -540,8 +541,8 @@ double NCP::PhysicsModel::sampleScatteringVector(NC::RNG &rng, double neutron_ek
     double b2 = 3.97314;
     double Q0 = 0.0510821;
     double corr_param = 5.4;
-    double xs = (A1/(-b1+2)*std::pow(Q0,-b1+2) + A2/(-b2+2)*std::pow(2*k,-b2+2) - A2/(-b2+2)*std::pow(Q0,-b2+2));
     nc_assert(k!=0);
+    double xs = (A1/(-b1+2)*std::pow(Q0,-b1+2) + A2/(-b2+2)*std::pow(2*k,-b2+2) - A2/(-b2+2)*std::pow(Q0,-b2+2));
     nc_assert(xs!=0);
     double ratio_sigma = 1 / xs ; // cross section over total cross section ratio
     double CDF_Q0 = (A1 * std::pow(Q0, -b1 + 2) / (-b1 + 2)) * ratio_sigma;
